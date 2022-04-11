@@ -21,17 +21,17 @@ RSYNC_FLAGS="-vh --progress --modify-window=1 --recursive --ignore-errors"
 
 . $(dirname "$0")/functions.sh
 
-if [ -z "$1" ] ; then
+if [ -z "$1" ]; then
     echo "No hostname given"
     exit 1
 fi
 
-if [ ! -f "${PT_FILENAME}" ] ; then
+if [ ! -f "${PT_FILENAME}" ]; then
     echo "No partition table found (${PT_FILENAME}). Run 'extract' first!"
     exit 1
 fi
 
-if [ -z "$CUSTOM_IMG_SIZE" ] ; then
+if [ -z "$CUSTOM_IMG_SIZE" ]; then
     export CUSTOM_IMG_SIZE=4096
 fi
 
@@ -40,7 +40,7 @@ set -e
 set -x
 
 # Removing previous loopback device
-losetup -a | grep "${CUSTOM_IMG_NAME}" | awk -F: '{ print $1 }' | \
+losetup -a | grep "${CUSTOM_IMG_NAME}" | awk -F: '{ print $1 }' |
     xargs -r sudo losetup -d
 
 echo "Creating custom image"
@@ -48,7 +48,7 @@ echo "Creating custom image"
 # Initialize image file
 dd if=/dev/zero of=./${CUSTOM_IMG_NAME} bs=1M count=${CUSTOM_IMG_SIZE}
 # Copying partition table from base Raspbian image (saved in 'extract')
-sfdisk ${CUSTOM_IMG_NAME} < "${PT_FILENAME}"
+sfdisk ${CUSTOM_IMG_NAME} <"${PT_FILENAME}"
 # Increase the linux partition size to the remaining space within CUSTOM_IMG_SIZE
 echo ", +" | sfdisk custom.img -N 2
 
@@ -58,7 +58,7 @@ LODEV=$(losetup -a | grep "${CUSTOM_IMG_NAME}" | awk -F: '{ print $1 }')
 trap 'do_umount' ERR
 
 CONTAINER=$(docker run -d --rm raspi-custom sleep 60)
-docker export ${CONTAINER} > custom-root.tar
+docker export ${CONTAINER} >custom-root.tar
 
 sudo mkfs.fat ${LODEV}p1
 sudo mount ${LODEV}p1 /mnt
@@ -70,9 +70,16 @@ sudo mkfs.ext4 ${LODEV}p2
 sudo mount ${LODEV}p2 /mnt
 sudo tar xf custom-root.tar -C /mnt --numeric-owner
 
+# Create hostname and hosts files
 sudo /bin/bash -c "echo $1 > /mnt/etc/hostname"
+sudo /bin/bash -c "echo 127.0.0.1	localhost > /mnt/etc/hosts"
+sudo /bin/bash -c "echo ::1		localhost ip6-localhost ip6-loopback >> /mnt/etc/hosts"
+sudo /bin/bash -c "echo ff02::1		ip6-allnodes >> /mnt/etc/hosts"
+sudo /bin/bash -c "echo ff02::2		ip6-allrouters >> /mnt/etc/hosts"
+sudo /bin/bash -c "echo 127.0.1.1	$1 >> /mnt/etc/hosts"
 
-PIDOCK_README=$(cat <<EOF
+PIDOCK_README=$(
+    cat <<EOF
 This raspberry pi has been customized with the Dockerfile
 in this directory using the pidock utility
 
