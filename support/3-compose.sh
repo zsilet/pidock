@@ -70,13 +70,7 @@ sudo mkfs.ext4 ${LODEV}p2
 sudo mount ${LODEV}p2 /mnt
 sudo tar xf custom-root.tar -C /mnt --numeric-owner
 
-# Create hostname and hosts files
-sudo /bin/bash -c "echo $1 > /mnt/etc/hostname"
-sudo /bin/bash -c "echo 127.0.0.1	localhost > /mnt/etc/hosts"
-sudo /bin/bash -c "echo ::1		localhost ip6-localhost ip6-loopback >> /mnt/etc/hosts"
-sudo /bin/bash -c "echo ff02::1		ip6-allnodes >> /mnt/etc/hosts"
-sudo /bin/bash -c "echo ff02::2		ip6-allrouters >> /mnt/etc/hosts"
-sudo /bin/bash -c "echo 127.0.1.1	$1 >> /mnt/etc/hosts"
+set_hostname $1
 
 PIDOCK_README=$(
     cat <<EOF
